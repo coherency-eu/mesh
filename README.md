@@ -12,7 +12,12 @@
    Installa `batctl` e abilita `batman-adv`.
    ```sh
    sudo apt install batctl -y
+   sudo apt install iptables -y
+   sudo apt install iptables-persistent -y
+   sudo apt install isc-dhcp-server -y
+   sudo apt install ifupdown -y
    ```
+   Se durante l'installazione, ti verrà chiesto di salvare le regole correnti di `iptables`. Conferma selezionando "Yes".
 
 ## 2. Attiva `batman-adv`
 
@@ -41,6 +46,18 @@ sudo systemctl stop NetworkManager
 ```sh
 sudo systemctl stop wpa_supplicant
 ```
+
+**Impedire al NetworkManager di gestire la rete wlan0:**
+   Per impedire al Network manager di prendere il controllo di wlan0 con conseguente scomparsa della rete mesh bisogna editare il file di configurazione di ifupdown:
+   ```sh
+   sudo nano /etc/network/interfaces
+   ```
+   Aggiungi la linea (o modifica l'eventuale linea già dedicata a wlan0):
+   ```sh
+   iface wlan0 inet manual
+   ```
+   Salva il file e applica le modifiche.
+
 
 **Impostare la modalità Ad-Hoc:**
 ```sh
@@ -81,76 +98,62 @@ sudo ifconfig bat0 10.0.0.1 netmask 255.255.255.0 up  # Modifica l'IP in base al
    sudo sysctl -p
    ```
 
-2. **Imposta le Regole di iptables per il NAT:**
+   In alternativa si può usare il comando:
+   ```
+   sudo sysctl -w net.ipv4.ip_forward=1
+   ```
+
+3. **Imposta le Regole di iptables per il NAT:**
 
 ### Passaggi per Installare `iptables`
 
-1. **Aggiorna il Gestore dei Pacchetti:**
-   Prima di installare `iptables`, assicurati che l'elenco dei pacchetti sia aggiornato.
-   ```sh
-   sudo apt update
-   ```
-
-2. **Installa `iptables`:**
-   Installa `iptables` utilizzando il comando seguente:
-   ```sh
-   sudo apt install iptables -y
-   ```
-
-3. **Verifica l'Installazione:**
-   Una volta completata l'installazione, verifica che `iptables` sia stato installato correttamente.
+1. **Verifica l'Installazione di iptables:**
+   Verifica che `iptables` sia stato installato correttamente.
    ```sh
    iptables --version
    ```
+2. Se il comando restituisce la versione di `iptables`, significa che è stato installato con successo.
 
-4. Se il comando restituisce la versione di `iptables`, significa che è stato installato con successo.
-
-5. **Crea la Directory per le Regole di `iptables`:**
+3. **Crea la Directory per le Regole di `iptables`:**
 
    Crea manualmente la directory necessaria per salvare le regole di `iptables`:
    ```sh
    sudo mkdir -p /etc/iptables
    ```
 
-6. **Salva le Regole di `iptables`:**
+4. **Salva le Regole di `iptables`:**
 
    Dopo aver creato la directory, salva le regole di `iptables` nel file `rules.v4`:
    ```sh
    sudo iptables-save | sudo tee /etc/iptables/rules.v4
    ```
 
-7. Per fare in modo che le regole di `iptables` siano applicate automaticamente all'avvio, puoi usare `iptables-persistent`, un pacchetto che carica automaticamente le regole di `iptables` durante l'avvio del sistema.
-**Installa `iptables-persistent`:**
-   ```sh
-   sudo apt install iptables-persistent -y
-   ```
-Durante l'installazione, ti verrà chiesto di salvare le regole correnti di `iptables`. Conferma selezionando "Yes".
+5. Per fare in modo che le regole di `iptables` siano applicate automaticamente all'avvio, puoi usare `iptables-persistent`, un pacchetto che carica automaticamente le regole di `iptables` durante l'avvio del sistema.
 
-8. **Verifica l'Installazione di `iptables-persistent`:**
+6. **Verifica l'Installazione di `iptables-persistent`:**
    Puoi verificare che `iptables-persistent` sia configurato correttamente controllando lo stato del servizio:
    ```sh
    sudo systemctl status netfilter-persistent
    ```
 
-9. **Ricarica le Regole di `iptables`:**
+7. **Ricarica le Regole di `iptables`:**
    Se necessario, ricarica le regole di `iptables` manualmente:
    ```sh
    sudo netfilter-persistent reload
    ```
 
-10. Configura `iptables` per permettere la condivisione della connessione Internet tra l'interfaccia Ethernet (che ha accesso a Internet) e l'interfaccia mesh.
+8. Configura `iptables` per permettere la condivisione della connessione Internet tra l'interfaccia Ethernet (che ha accesso a Internet) e l'interfaccia mesh.
 ```sh
 sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
 ```
-11. Configurare la Raspberry come Gateway
+   Sostituisci eth0 con l'interfaccia di uscita verso internet, ad esempio wwan0
+   
+9. Configurare la Raspberry come Gateway
 ```sh
 sudo batctl gw_mode server
 ```
 
-## 5. Installazione server DHCP
-```sh
-sudo apt install isc-dhcp-server
-```
+## 5. Configurazione del server DHCP
 ```sh
 sudo nano /etc/dhcp/dhcpd.conf
 ```
@@ -251,7 +254,7 @@ sudo ip link set up dev bat0
 ```
 ### 6. Configurare la Raspberry come Gateway
 ```sh
-sudo batctl gw_mode server
+sudo batctl gw_mode client
 ```
 
 ### 7. Chiama il DHCP Client per assegnazione IP
@@ -305,9 +308,14 @@ Modificare il file `/etc/rc.local` e aggiungere prima di `exit 0`
    sudo ifconfig bat0 10.0.0.1 netmask 255.255.255.0 up
    sudo batctl gw_mode server
    sudo systemctl restart isc-dhcp-server
+   ```
+   Se si vuole che sia attivo il client dhcp sulla rete eth0 bisogna aggiungere il comando:
+   ```
    sudo dhclient eth0
    ```
-2. Per Nodo Mesh
+   Se si usa wwan0 non serve in quanto è tutto gestito dal nmcli
+   
+3. Per Nodo Mesh
 ```
 sudo ip link set wlan0 down
 sudo iwconfig wlan0 mode ad-hoc essid "mesh-net" ap any channel 1
