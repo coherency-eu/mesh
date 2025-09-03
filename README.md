@@ -33,21 +33,21 @@
    ```
 
 ## 3. Configurare l'interfaccia Ethernet e Wireless
-Se hai il NetworkManager attivo, disattivalo.
+   Se hai il NetworkManager attivo, disattivalo.
 
-### 1. Disattivare il Gestore di Rete
-Se stai usando un gestore di rete come `NetworkManager`, devi disabilitarlo temporaneamente per configurare manualmente la tua rete mesh.
-```sh
-sudo systemctl stop NetworkManager
-```
+1. Disattivare il Gestore di Rete
+   Se stai usando un gestore di rete come `NetworkManager`, devi disabilitarlo temporaneamente per configurare manualmente la tua rete mesh.
+   ```sh
+   sudo systemctl stop NetworkManager
+   ```
 
-### 2. Disconnettere `wpa_supplicant`
-`wpa_supplicant` potrebbe gestire l'interfaccia Wi-Fi. Fermalo prima di cambiare la modalità dell'interfaccia:
-```sh
-sudo systemctl stop wpa_supplicant
-```
+2. Disconnettere `wpa_supplicant`
+   `wpa_supplicant` potrebbe gestire l'interfaccia Wi-Fi. Fermalo prima di cambiare la modalità dell'interfaccia:
+   ```sh
+   sudo systemctl stop wpa_supplicant
+   ```
 
-**Impedire al NetworkManager di gestire la rete wlan0:**
+3. Impedire al NetworkManager di gestire la rete wlan0:
    Per impedire al Network manager di prendere il controllo di wlan0 con conseguente scomparsa della rete mesh bisogna editare il file di configurazione di ifupdown:
    ```sh
    sudo nano /etc/network/interfaces
@@ -59,24 +59,24 @@ sudo systemctl stop wpa_supplicant
    Salva il file e applica le modifiche.
 
 
-**Impostare la modalità Ad-Hoc:**
-```sh
-sudo ip link set wlan0 down
-sudo iwconfig wlan0 mode ad-hoc essid "mesh-network" ap any channel 1
-sudo ip link set wlan0 up
-```
+4. Impostare la modalità Ad-Hoc:
+   ```sh
+   sudo ip link set wlan0 down
+   sudo iwconfig wlan0 mode ad-hoc essid "mesh-network" ap any channel 1
+   sudo ip link set wlan0 up
+   ```
 
- **Aggiungi l'Interfaccia Wi-Fi a `batman-adv`:**
-```sh
-sudo batctl if add wlan0
-sudo ip link set up dev bat0
-```
+5. Aggiungi l'Interfaccia Wi-Fi a `batman-adv`:
+   ```sh
+   sudo batctl if add wlan0
+   sudo ip link set up dev bat0
+   ```
 
-**Configura l'Indirizzo IP sull'Interfaccia `bat0`:**
+6. Configura l'Indirizzo IP sull'Interfaccia `bat0`:**
 Assegna un indirizzo IP statico all'interfaccia `bat0` nella stessa sottorete utilizzata dalle altre Raspberry Pi nella rete mesh.
-```sh
-sudo ifconfig bat0 10.0.0.1 netmask 255.255.255.0 up  # Modifica l'IP in base alla tua rete
-```
+   ```sh
+   sudo ifconfig bat0 10.0.0.1 netmask 255.255.255.0 up  # Modifica l'IP in base alla tua rete 
+   ```
 
 ## 3. Configurare la Condivisione della Connessione Internet
 
@@ -143,40 +143,40 @@ sudo ifconfig bat0 10.0.0.1 netmask 255.255.255.0 up  # Modifica l'IP in base al
    ```
 
 8. Configura `iptables` per permettere la condivisione della connessione Internet tra l'interfaccia Ethernet (che ha accesso a Internet) e l'interfaccia mesh.
-```sh
-sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
-```
+   ```sh
+   sudo iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+   ```
    Sostituisci eth0 con l'interfaccia di uscita verso internet, ad esempio wwan0
    
 9. Configurare la Raspberry come Gateway
-```sh
-sudo batctl gw_mode server
-```
+   ```sh
+   sudo batctl gw_mode server
+   ```
 
 ## 5. Configurazione del server DHCP
-```sh
-sudo nano /etc/dhcp/dhcpd.conf
-```
-Inserire questa configurazione:
-```
-subnet 10.0.0.0 netmask 255.255.255.0 {
-    range 10.0.0.10 10.0.0.100;
-    option routers 10.0.0.1;  # L'indirizzo IP del gateway (bat0)
-    option broadcast-address 10.0.0.255;
-    option domain-name-servers 8.8.8.8, 8.8.4.4;  # DNS
-}
-```
-```
-sudo nano /etc/default/isc-dhcp-server
-```
-Inserire `bat0` nelle inferfacce:
-```
-INTERFACESv4="bat0"
-```
-Infine restartare il server dhcp:
-```sh
-sudo systemctl restart isc-dhcp-server
-```
+   ```sh
+   sudo nano /etc/dhcp/dhcpd.conf
+   ```
+   Inserire questa configurazione:
+   ```
+   subnet 10.0.0.0 netmask 255.255.255.0 {
+       range 10.0.0.10 10.0.0.100;
+       option routers 10.0.0.1;  # L'indirizzo IP del gateway (bat0)
+       option broadcast-address 10.0.0.255;
+       option domain-name-servers 8.8.8.8, 8.8.4.4;  # DNS
+   }
+   ```
+   ```
+   sudo nano /etc/default/isc-dhcp-server
+   ```
+   Inserire `bat0` nelle inferfacce:
+   ```
+   INTERFACESv4="bat0"
+   ```
+   Infine restartare il server dhcp:
+   ```sh
+   sudo systemctl restart isc-dhcp-server
+   ```
 ## 6. Verifica la Configurazione (prima configura una raspberry per il nodo mesh)
 
 Per questa sezione potrebbe essere necessario farla in un secondo momento, quando saranno installate anche le raspberry della rete mesh.
@@ -229,38 +229,38 @@ Ripeti i seguenti passaggi su entrambe le Raspberry Pi (seconda e terza):
    ```
 
 ### 2. Disattivare il Gestore di Rete
-Se stai usando un gestore di rete come `NetworkManager`, devi disabilitarlo temporaneamente per configurare manualmente la tua rete mesh.
-```sh
-sudo systemctl stop NetworkManager
-```
+   Se stai usando un gestore di rete come `NetworkManager`, devi disabilitarlo temporaneamente per configurare manualmente la tua rete mesh.
+   ```sh
+   sudo systemctl stop NetworkManager
+   ```
 
 ### 3. Disconnettere `wpa_supplicant`
-`wpa_supplicant` potrebbe gestire l'interfaccia Wi-Fi. Fermalo prima di cambiare la modalità dell'interfaccia:
-```sh
-sudo systemctl stop wpa_supplicant
-```
+   `wpa_supplicant` potrebbe gestire l'interfaccia Wi-Fi. Fermalo prima di cambiare la modalità dell'interfaccia:
+   ```sh
+   sudo systemctl stop wpa_supplicant
+   ```
 
 ### 4. Impostare la modalità Ad-Hoc:
-```sh
-sudo ip link set wlan0 down
-sudo iwconfig wlan0 mode ad-hoc essid "mesh-network" ap any channel 1
-sudo ip link set wlan0 up
-```
+   ```sh
+   sudo ip link set wlan0 down
+   sudo iwconfig wlan0 mode ad-hoc essid "mesh-network" ap any channel 1
+   sudo ip link set wlan0 up
+   ```
 
 ### 5. Aggiungi l'Interfaccia Wi-Fi a `batman-adv`:
-```sh
-sudo batctl if add wlan0
-sudo ip link set up dev bat0
-```
+   ```sh
+   sudo batctl if add wlan0
+   sudo ip link set up dev bat0
+   ```
 ### 6. Configurare la Raspberry come Gateway
-```sh
-sudo batctl gw_mode client
-```
+   ```sh
+   sudo batctl gw_mode client
+   ```
 
 ### 7. Chiama il DHCP Client per assegnazione IP
-```sh
-sudo dhclient bat0
-```
+   ```sh
+   sudo dhclient bat0
+   ```
 ### 8. Verificare la Configurazione della Rete Mesh
 
 1. **Controlla lo Stato della Rete Mesh su Tutte le Raspberry Pi:**
@@ -275,9 +275,9 @@ sudo dhclient bat0
    Dovresti vedere le altre Raspberry Pi come vicine nella rete mesh.
 
 2. **Aggiungere gateway**
-```
-sudo route add default gw 10.0.0.1 #Sostituire con l`ip del gateway
-```
+   ```
+   sudo route add default gw 10.0.0.1 #Sostituire con l`ip del gateway
+   ```
 3. **Testa la Connettività di Rete:**
 
    Esegui un ping da ciascuna Raspberry Pi alle altre per assicurarti che la connettività sia stabilita:
@@ -316,13 +316,13 @@ Modificare il file `/etc/rc.local` e aggiungere prima di `exit 0`
    Se si usa wwan0 non serve in quanto è tutto gestito dal nmcli
    
 3. Per Nodo Mesh
-```
-sudo ip link set wlan0 down
-sudo iwconfig wlan0 mode ad-hoc essid "mesh-net" ap any channel 1
-sudo ip link set wlan0 up
-sudo batctl if add wlan0
-sudo ip link set up dev bat0
-sudo batctl gw_mode client
-sudo dhclient bat0
-sudo route add default gw 10.0.0.1
-```
+   ```
+   sudo ip link set wlan0 down
+   sudo iwconfig wlan0 mode ad-hoc essid "mesh-net" ap any channel 1
+   sudo ip link set wlan0 up
+   sudo batctl if add wlan0
+   sudo ip link set up dev bat0
+   sudo batctl gw_mode client
+   sudo dhclient bat0
+   sudo route add default gw 10.0.0.1
+   ```
